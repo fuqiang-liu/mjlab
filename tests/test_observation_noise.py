@@ -213,7 +213,7 @@ def test_noise_tensor_caching(device):
   result1 = noise.apply(data)
 
   # Verify the cache was populated and get reference to cached tensor
-  device_key = str(device)
+  device_key = str(result1.device)
   assert device_key in noise._tensor_cache
   assert "bias" in noise._tensor_cache[device_key]
   cached_tensor = noise._tensor_cache[device_key]["bias"]
