@@ -5,9 +5,11 @@ from mjlab.asset_zoo.robots import (
   get_elf3_robot_cfg,
 )
 from mjlab.envs import ManagerBasedRlEnvCfg
+from mjlab.envs import mdp as envs_mdp
 from mjlab.envs.mdp.actions import JointPositionActionCfg
+from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
-from mjlab.sensor import BuiltinSensorCfg, ObjRef, ContactMatch, ContactSensorCfg
+from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 from .velocity_env_cfg import make_velocity_env_cfg
@@ -17,7 +19,9 @@ def bxi_elf3_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Create BXI ELF3 rough terrain velocity configuration."""
   cfg = make_velocity_env_cfg()
 
-  cfg.observations
+  cfg.sim.mujoco.ccd_iterations = 500
+  cfg.sim.contact_sensor_maxmatch = 500
+  cfg.sim.nconmax = 45
 
   cfg.scene.entities = {"robot": get_elf3_robot_cfg()}
 
@@ -47,7 +51,6 @@ def bxi_elf3_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     reduce="none",
     num_slots=1,
   )
-
   cfg.scene.sensors = (feet_ground_cfg, self_collision_cfg)
 
   if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
@@ -59,7 +62,6 @@ def bxi_elf3_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
   cfg.viewer.body_name = "torso_link"
 
-  assert cfg.commands is not None
   twist_cmd = cfg.commands["twist"]
   assert isinstance(twist_cmd, UniformVelocityCommandCfg)
   twist_cmd.viz.z_offset = 1.15
@@ -69,6 +71,7 @@ def bxi_elf3_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   ].site_names = site_names
 
   cfg.events["foot_friction"].params["asset_cfg"].geom_names = geom_names
+  cfg.events["base_com"].params["asset_cfg"].body_names = ("torso_link",)
 
   cfg.rewards["pose"].params["std_standing"] = {
     r".*hip_y.*": 0.3,
@@ -150,6 +153,11 @@ def bxi_elf3_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
     cfg.observations["policy"].enable_corruption = False
     cfg.events.pop("push_robot", None)
+    cfg.events["randomize_terrain"] = EventTermCfg(
+      func=envs_mdp.randomize_terrain,
+      mode="reset",
+      params={},
+    )
 
     if cfg.scene.terrain is not None:
       if cfg.scene.terrain.terrain_generator is not None:
@@ -165,20 +173,22 @@ def bxi_elf3_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Create BXI ELF3 flat terrain velocity configuration."""
   cfg = bxi_elf3_rough_env_cfg(play=play)
 
+  cfg.sim.njmax = 300
+  cfg.sim.mujoco.ccd_iterations = 50
+  cfg.sim.contact_sensor_maxmatch = 64
+  cfg.sim.nconmax = None
+
   # Switch to flat terrain.
   assert cfg.scene.terrain is not None
   cfg.scene.terrain.terrain_type = "plane"
   cfg.scene.terrain.terrain_generator = None
 
   # Disable terrain curriculum.
-  assert cfg.curriculum is not None
   assert "terrain_levels" in cfg.curriculum
   del cfg.curriculum["terrain_levels"]
 
   if play:
-    commands = cfg.commands
-    assert commands is not None
-    twist_cmd = commands["twist"]
+    twist_cmd = cfg.commands["twist"]
     assert isinstance(twist_cmd, UniformVelocityCommandCfg)
     twist_cmd.ranges.lin_vel_x = (-1.5, 2.0)
     twist_cmd.ranges.ang_vel_z = (-0.7, 0.7)
