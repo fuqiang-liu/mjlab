@@ -56,7 +56,7 @@
     <body name="torso_link" pos="0 0 1.1" childclass="elf3">
       <light pos="0 0 2" mode="trackcom"/>
       <camera name="tracking" pos="1.734 -1.135 .35" xyaxes="0.552 0.834 -0.000 -0.170 0.112 0.979" mode="trackcom"/>
-      <inertial pos="-0.001401 0.00016468 -0.031753" quat="0.999882 -0.00116014 -0.0153263 -0.000154017" mass="8.0753" diaginertia="0.111595 0.0864478 0.04676"/>
+      <inertial pos="0.001601 0.000219 0.02325" quat="0.999996 -0.00137768 -0.000418876 -0.00258007" mass="12.004" diaginertia="0.293168 0.265897 0.0611617"/>
       <joint name="world_joint" type="free"/>
       <geom type="mesh" rgba="0.75294 0.75294 0.75294 1" mesh="torso_link"/>
       <geom name="torso_collision" class="collision" size="0.09" fromto="0.0 0 -0.12 0.0 0 0.08"/>
